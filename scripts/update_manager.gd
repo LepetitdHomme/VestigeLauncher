@@ -1,0 +1,149 @@
+extends Node
+
+signal update_check_completed(has_update: bool, version_info: Dictionary)
+signal download_progress(percent: float)
+signal download_completed(success: bool)
+signal error_occurred(message: String)
+
+var _http_request: HTTPRequest
+var _downloading: bool = false
+var _current_release_info: Dictionary = {}
+var download_url: String = ""
+
+func _ready():
+	_http_request = HTTPRequest.new()
+	add_child(_http_request)
+	_http_request.request_completed.connect(_on_request_completed)
+	#_http_request.download_progress.connect(_on_download_progress)
+
+func check_for_updates() -> void:
+	if not _is_internet_available():
+		error_occurred.emit("No internet connection available")
+		update_check_completed.emit(false, {})
+		return
+	
+	var url = Config.get_github_latest_release_url()
+	var error = _http_request.request(url)
+	
+	if error != OK:
+		error_occurred.emit("Failed to start update check")
+		update_check_completed.emit(false, {})
+
+func download_update(download_url: String) -> void:
+	if _downloading:
+		return
+	
+	_downloading = true
+	
+	# Create temp directory if it doesn't exist
+	var dir = DirAccess.open("user://")
+	if not dir.dir_exists(Config.get_temp_download_path()):
+		dir.make_dir(Config.get_temp_download_path())
+	
+	var download_path = Config.get_temp_download_path().path_join("update.zip")
+	
+	# Fixed error: separate the assignment from the request
+	_http_request.download_file = download_path
+	var error = _http_request.request(download_url)
+	
+	if error != OK:
+		_downloading = false
+		error_occurred.emit("Failed to start download")
+		download_completed.emit(false)
+
+func install_update() -> bool:
+	# Extract the downloaded update to the correct location
+	var download_path = Config.get_temp_download_path().path_join("update.zip")
+	
+	# Use gdunzip or another method to extract the ZIP file
+	# For simplicity, we'll assume it's just a direct PCK replacement
+	
+	var dir = DirAccess.open("user://")
+	var error = dir.copy(download_path, Config.get_app_pck_path())
+	
+	if error != OK:
+		error_occurred.emit("Failed to install update")
+		return false
+	
+	# Save the new version info
+	var file = FileAccess.open(Config.get_version_file_path(), FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(_current_release_info))
+	
+	# Clean up temp files
+	dir.remove(download_path)
+	
+	return true
+
+func launch_app() -> void:
+	var app_path = Config.get_main_app_path()
+	
+	# Check if file exists
+	if not FileAccess.file_exists(app_path):
+		error_occurred.emit("Application not found at: " + app_path)
+		return
+	
+	# Launch the app
+	var pid = OS.create_process(app_path, [])
+	if pid <= 0:
+		error_occurred.emit("Failed to launch application")
+		return
+	
+	# Exit the launcher
+	get_tree().quit()
+
+func _on_request_completed(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray) -> void:
+	if _downloading:
+		_downloading = false
+		download_completed.emit(result == OK)
+		return
+	
+	if result != OK or response_code != 200:
+		error_occurred.emit("Failed to check for updates. Error code: " + str(response_code))
+		update_check_completed.emit(false, {})
+		return
+	
+	var json_string = body.get_string_from_utf8()
+	var json = JSON.new()
+	var parse_result = json.parse(json_string)
+	
+	if parse_result != OK:
+		error_occurred.emit("Failed to parse update information")
+		update_check_completed.emit(false, {})
+		return
+	
+	var release_info = json.get_data()
+	_current_release_info = release_info
+	
+	# Extract version from tag_name (usually in format v1.0.0)
+	var remote_version = release_info.get("tag_name", "")
+	if remote_version.begins_with("v"):
+		remote_version = remote_version.substr(1)
+	
+	var has_update = _is_newer_version(remote_version, Config.CURRENT_VERSION)
+	update_check_completed.emit(has_update, release_info)
+
+func _on_download_progress(bytes_downloaded: int, total_bytes: int):
+	var percent = float(bytes_downloaded) / float(total_bytes) * 100.0 if total_bytes > 0 else 0
+	download_progress.emit(percent)
+
+func _is_internet_available() -> bool:
+	var http = HTTPClient.new()
+	var err = http.connect_to_host("api.github.com", 443)
+	return err == OK
+
+func _is_newer_version(remote_version: String, current_version: String) -> bool:
+	# Simple semantic version comparison
+	var remote_parts = remote_version.split(".")
+	var current_parts = current_version.split(".")
+	
+	for i in range(3):  # Compare major.minor.patch
+		var remote_num = int(remote_parts[i]) if i < remote_parts.size() else 0
+		var current_num = int(current_parts[i]) if i < current_parts.size() else 0
+		
+		if remote_num > current_num:
+			return true
+		elif remote_num < current_num:
+			return false
+	
+	return false  # Versions are equal
