@@ -1,6 +1,18 @@
-[gd_scene load_steps=2 format=3 uid="uid://sy4m3y3luogp"]
+[gd_scene load_steps=3 format=3 uid="uid://sy4m3y3luogp"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_jt7xj"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sfmxk"]
+content_margin_left = 15.0
+content_margin_top = 15.0
+content_margin_right = 15.0
+content_margin_bottom = 15.0
+bg_color = Color(0.129412, 0.129412, 0.129412, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.188235, 0.188235, 0.188235, 1)
 
 [node name="Control" type="Control"]
 layout_mode = 3
@@ -20,7 +32,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.129412, 0.129412, 0.129412, 1)
 
-[node name="CenterContainer" type="CenterContainer" parent="ColorRect"]
+[node name="ScrollContainer" type="ScrollContainer" parent="ColorRect"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -28,43 +40,75 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ColorRect/CenterContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="ColorRect/ScrollContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ColorRect/ScrollContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 20
 alignment = 1
 
-[node name="TitleLabel" type="Label" parent="ColorRect/CenterContainer/VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="ColorRect/ScrollContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Vestige launcher"
 horizontal_alignment = 1
 
-[node name="StatusLabel" type="Label" parent="ColorRect/CenterContainer/VBoxContainer"]
+[node name="StatusLabel" type="Label" parent="ColorRect/ScrollContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 horizontal_alignment = 1
 
-[node name="ProgressBar" type="ProgressBar" parent="ColorRect/CenterContainer/VBoxContainer"]
+[node name="ProgressBar" type="ProgressBar" parent="ColorRect/ScrollContainer/MarginContainer/VBoxContainer"]
 visible = false
 layout_mode = 2
 
-[node name="RichTextLabel" type="RichTextLabel" parent="ColorRect/CenterContainer/VBoxContainer"]
+[node name="HBoxContainer2" type="HBoxContainer" parent="ColorRect/ScrollContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="ColorRect/CenterContainer/VBoxContainer"]
+[node name="TextEdit" type="TextEdit" parent="ColorRect/ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_readonly_color = Color(0.860369, 0.860369, 0.860369, 1)
+theme_override_font_sizes/font_size = 13
+theme_override_styles/read_only = SubResource("StyleBoxFlat_sfmxk")
+text = "test coucou awd ad
+what the hell
+test coucoud awda dad
+"
+editable = false
+context_menu_enabled = false
+shortcut_keys_enabled = false
+selecting_enabled = false
+deselect_on_focus_loss_enabled = false
+drag_and_drop_selection_enabled = false
+virtual_keyboard_enabled = false
+middle_mouse_paste_enabled = false
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ColorRect/ScrollContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 alignment = 1
 
-[node name="UpdateButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer/HBoxContainer"]
+[node name="UpdateButton" type="Button" parent="ColorRect/ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 mouse_default_cursor_shape = 2
 text = "Update"
 
-[node name="SkipButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer/HBoxContainer"]
+[node name="SkipButton" type="Button" parent="ColorRect/ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 mouse_default_cursor_shape = 2
 text = "Skip Update"
 
-[node name="LaunchButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer/HBoxContainer"]
+[node name="LaunchButton" type="Button" parent="ColorRect/ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 mouse_default_cursor_shape = 2
 text = "Launch App

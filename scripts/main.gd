@@ -1,11 +1,12 @@
 extends Control
 
-@onready var status_label = $ColorRect/CenterContainer/VBoxContainer/StatusLabel
-@onready var progress_bar = $ColorRect/CenterContainer/VBoxContainer/ProgressBar
-@onready var update_info = $ColorRect/CenterContainer/VBoxContainer/RichTextLabel
-@onready var update_button = $ColorRect/CenterContainer/VBoxContainer/HBoxContainer/UpdateButton
-@onready var skip_button = $ColorRect/CenterContainer/VBoxContainer/HBoxContainer/SkipButton
-@onready var launch_button = $ColorRect/CenterContainer/VBoxContainer/HBoxContainer/LaunchButton
+@onready var status_label = $ColorRect/ScrollContainer/MarginContainer/VBoxContainer/StatusLabel
+@onready var progress_bar = $ColorRect/ScrollContainer/MarginContainer/VBoxContainer/ProgressBar
+@onready var h_box_container_2 = $ColorRect/ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer2
+@onready var update_info = $ColorRect/ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer2/TextEdit
+@onready var update_button = $ColorRect/ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer/UpdateButton
+@onready var skip_button = $ColorRect/ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer/SkipButton
+@onready var launch_button = $ColorRect/ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer/LaunchButton
 
 
 func _ready():
@@ -37,8 +38,10 @@ func _on_update_check_completed(has_update: bool, version_info: Dictionary):
 		update_info.visible = true
 		
 		# Show changelog
-		var changelog = version_info.get("body", "No changelog available")
-		update_info.text = changelog
+		var changelog = version_info.get("body", "")
+		if not changelog.is_empty():
+			h_box_container_2.visible = true
+			update_info.text = changelog
 		
 		# Find download URL for current platform
 		var download_url = ""
@@ -102,6 +105,7 @@ func _on_launch_button_pressed():
 	UpdateManager.launch_app()
 
 func _is_asset_for_current_platform(asset_name: String) -> bool:
+	#print_debug(OS.get_name())
 	var platform = OS.get_name().to_lower()
 	var asset_lower = asset_name.to_lower()
 	

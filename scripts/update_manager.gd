@@ -32,17 +32,12 @@ func check_for_updates() -> void:
 func download_update(download_url: String) -> void:
 	if _downloading:
 		return
-	
+
 	_downloading = true
-	
-	# Create temp directory if it doesn't exist
-	var dir = DirAccess.open("user://")
-	if not dir.dir_exists(Config.get_temp_download_path()):
-		dir.make_dir(Config.get_temp_download_path())
-	
-	var download_path = Config.get_temp_download_path().path_join("update.zip")
-	
-	# Fixed error: separate the assignment from the request
+
+	var download_path = Config.get_app_directory().path_join("new_version")
+	#
+	## Fixed error: separate the assignment from the request
 	_http_request.download_file = download_path
 	var error = _http_request.request(download_url)
 	
@@ -53,7 +48,7 @@ func download_update(download_url: String) -> void:
 
 func install_update() -> bool:
 	# Extract the downloaded update to the correct location
-	var download_path = Config.get_temp_download_path().path_join("update.zip")
+	var download_path = Config.get_app_directory().path_join("new_version")
 	
 	# Use gdunzip or another method to extract the ZIP file
 	# For simplicity, we'll assume it's just a direct PCK replacement
@@ -75,22 +70,22 @@ func install_update() -> bool:
 	
 	return true
 
+
 func launch_app() -> void:
-	var app_path = Config.get_main_app_path()
+	var app_path = OS.get_executable_path()
+	var app_pck_path = Config.get_app_pck_path()
 	
-	# Check if file exists
-	if not FileAccess.file_exists(app_path):
-		error_occurred.emit("Application not found at: " + app_path)
+	if not FileAccess.file_exists(app_pck_path):
+		error_occurred.emit("Application PCK not found at: ", app_pck_path)
 		return
-	
-	# Launch the app
-	var pid = OS.create_process(app_path, [])
+
+	var pid = OS.create_process(app_path, ["--main-pack", app_pck_path])
 	if pid <= 0:
 		error_occurred.emit("Failed to launch application")
 		return
-	
-	# Exit the launcher
+
 	get_tree().quit()
+
 
 func _on_request_completed(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray) -> void:
 	if _downloading:
@@ -113,6 +108,7 @@ func _on_request_completed(result: int, response_code: int, headers: PackedStrin
 		return
 	
 	var release_info = json.get_data()
+	#print_debug(release_info)
 	_current_release_info = release_info
 	
 	# Extract version from tag_name (usually in format v1.0.0)
@@ -120,7 +116,9 @@ func _on_request_completed(result: int, response_code: int, headers: PackedStrin
 	if remote_version.begins_with("v"):
 		remote_version = remote_version.substr(1)
 	
-	var has_update = _is_newer_version(remote_version, Config.CURRENT_VERSION)
+	var has_update = _is_newer_version(remote_version, Config.get_current_version())
+	#print_debug(remote_version)
+	#print_debug(Config.get_current_version())
 	update_check_completed.emit(has_update, release_info)
 
 func _on_download_progress(bytes_downloaded: int, total_bytes: int):
