@@ -10,13 +10,12 @@ const GITHUB_REPO = "VestigeLauncher"
 
 
 static func get_current_version() -> String:
-	var current_version : String = "0.0.0"
+	var current_version : String = "v0.0.0"
 	var file = FileAccess.open(Config.get_version_file_path(), FileAccess.READ)
 	if file:
 		current_version = file.get_as_text()
-		current_version = current_version.substr(1)
 
-	return current_version
+	return current_version.substr(1)
 
 
 static func get_app_directory() -> String:
@@ -37,7 +36,7 @@ static func get_app_pck_path() -> String:
 	return get_app_directory().path_join("vestige.pck")
 
 static func get_version_file_path() -> String:
-	return get_app_directory().path_join("version.json")
+	return get_app_directory().path_join(".version")
 
 #static func get_temp_download_path() -> String:
 	#return get_app_directory().path_join("temp_download")

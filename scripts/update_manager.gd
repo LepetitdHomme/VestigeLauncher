@@ -7,7 +7,7 @@ signal error_occurred(message: String)
 
 var _http_request: HTTPRequest
 var _downloading: bool = false
-var _current_release_info: Dictionary = {}
+var _current_release : String = "v0.0.0"
 var download_url: String = ""
 
 func _ready():
@@ -15,6 +15,7 @@ func _ready():
 	add_child(_http_request)
 	_http_request.request_completed.connect(_on_request_completed)
 	#_http_request.download_progress.connect(_on_download_progress)
+
 
 func check_for_updates() -> void:
 	if not _is_internet_available():
@@ -28,6 +29,7 @@ func check_for_updates() -> void:
 	if error != OK:
 		error_occurred.emit("Failed to start update check")
 		update_check_completed.emit(false, {})
+
 
 func download_update(download_url: String) -> void:
 	if _downloading:
@@ -46,6 +48,7 @@ func download_update(download_url: String) -> void:
 		error_occurred.emit("Failed to start download")
 		download_completed.emit(false)
 
+
 func install_update() -> bool:
 	# Extract the downloaded update to the correct location
 	var download_path = Config.get_app_directory().path_join("new_version")
@@ -63,7 +66,7 @@ func install_update() -> bool:
 	# Save the new version info
 	var file = FileAccess.open(Config.get_version_file_path(), FileAccess.WRITE)
 	if file:
-		file.store_string(JSON.stringify(_current_release_info))
+		file.store_string(_current_release)
 	
 	# Clean up temp files
 	dir.remove(download_path)
@@ -108,9 +111,9 @@ func _on_request_completed(result: int, response_code: int, headers: PackedStrin
 		return
 	
 	var release_info = json.get_data()
-	#print_debug(release_info)
-	_current_release_info = release_info
-	
+	print_debug(release_info)
+	_current_release = release_info.get("tag_name", "v0.0.0")
+
 	# Extract version from tag_name (usually in format v1.0.0)
 	var remote_version = release_info.get("tag_name", "")
 	if remote_version.begins_with("v"):
@@ -121,14 +124,17 @@ func _on_request_completed(result: int, response_code: int, headers: PackedStrin
 	#print_debug(Config.get_current_version())
 	update_check_completed.emit(has_update, release_info)
 
+
 func _on_download_progress(bytes_downloaded: int, total_bytes: int):
 	var percent = float(bytes_downloaded) / float(total_bytes) * 100.0 if total_bytes > 0 else 0
 	download_progress.emit(percent)
+
 
 func _is_internet_available() -> bool:
 	var http = HTTPClient.new()
 	var err = http.connect_to_host("api.github.com", 443)
 	return err == OK
+
 
 func _is_newer_version(remote_version: String, current_version: String) -> bool:
 	# Simple semantic version comparison
