@@ -44,6 +44,7 @@ func download_update(download_url: String) -> void:
 	var error = _http_request.request(download_url)
 	
 	if error != OK:
+		print_debug(error)
 		_downloading = false
 		error_occurred.emit("Failed to start download")
 		download_completed.emit(false)
@@ -74,19 +75,37 @@ func install_update() -> bool:
 	return true
 
 
+
 func launch_app() -> void:
-	var app_path = OS.get_executable_path()
 	var app_pck_path = Config.get_app_pck_path()
 	
+	print("PCK path: " + app_pck_path)
+	
 	if not FileAccess.file_exists(app_pck_path):
-		error_occurred.emit("Application PCK not found at: ", app_pck_path)
+		error_occurred.emit("Application PCK not found at: " + app_pck_path)
 		return
-
-	var pid = OS.create_process(app_path, ["--main-pack", app_pck_path])
-	if pid <= 0:
+	
+	var launch_success = false
+	
+	if OS.get_name() == "macOS":
+		# On macOS, use create_instance which is designed for this purpose
+		# This creates a new instance of the same application with different arguments
+		var args = ["--main-pack", app_pck_path]
+		print("Creating new instance with args: " + str(args))
+		launch_success = OS.create_instance(args)
+		print("Create instance result: " + str(launch_success))
+	else:
+		# On Windows/Linux, use create_process
+		var app_path = OS.get_executable_path()
+		print("Executable path: " + app_path)
+		var pid = OS.create_process(app_path, ["--main-pack", app_pck_path])
+		print("Process creation result: " + str(pid))
+		launch_success = (pid > 0)
+	
+	if not launch_success:
 		error_occurred.emit("Failed to launch application")
 		return
-
+	
 	get_tree().quit()
 
 
@@ -111,7 +130,7 @@ func _on_request_completed(result: int, response_code: int, headers: PackedStrin
 		return
 	
 	var release_info = json.get_data()
-	print_debug(release_info)
+	#print_debug(release_info)
 	_current_release = release_info.get("tag_name", "v0.0.0")
 
 	# Extract version from tag_name (usually in format v1.0.0)

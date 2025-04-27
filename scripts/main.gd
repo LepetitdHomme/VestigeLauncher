@@ -10,6 +10,7 @@ extends Control
 
 
 func _ready():
+	adjust_viewport()
 	# Connect signals from the global UpdateManager singleton
 	UpdateManager.update_check_completed.connect(_on_update_check_completed)
 	UpdateManager.download_progress.connect(_on_download_progress)
@@ -31,6 +32,29 @@ func _ready():
 	# Begin update check
 	status_label.text = "Checking for updates..."
 	UpdateManager.check_for_updates()
+
+
+func get_ui_scale_factor(dpi: float, screen_size: Vector2) -> float:
+	var reference_dpi := 109.0
+	var reference_resolution := Vector2(2560, 1440)
+
+	var dpi_ratio := dpi / reference_dpi
+	var res_ratio := (screen_size.x * screen_size.y) / (reference_resolution.x * reference_resolution.y)
+
+	var custom_scale := 0.0 * dpi_ratio + 0.8 * res_ratio
+	return clamp(custom_scale, 1.0, 2.0)
+
+
+func adjust_viewport():
+	# Reference setup: 2K (2560x1440), ~27", ~109 DPI
+	var dpi = DisplayServer.screen_get_dpi()
+	var screen_size = DisplayServer.screen_get_size()
+	var scale_factor = get_ui_scale_factor(dpi, screen_size)
+	print("INFO: dpi:", dpi)
+	print("INFO: screen:", screen_size)
+	print("INFO: scale factor:", scale_factor)
+	get_viewport().content_scale_factor = scale_factor
+
 
 func _on_update_check_completed(has_update: bool, version_info: Dictionary):
 	if has_update:
@@ -78,11 +102,13 @@ func _on_download_completed(success: bool):
 		else:
 			status_label.text = "Failed to install update."
 	else:
-		status_label.text = "Download failed."
+		pass
+		#status_label.text = "Download failed."
 	
 	launch_button.visible = true
 
 func _on_error(message: String):
+	print(message)
 	status_label.text = "Error: " + message
 	launch_button.visible = true
 
@@ -107,7 +133,9 @@ func _on_launch_button_pressed():
 func _is_asset_for_current_platform(asset_name: String) -> bool:
 	#print_debug(OS.get_name())
 	var platform = OS.get_name().to_lower()
+	#print_debug(platform)
 	var asset_lower = asset_name.to_lower()
-	
+	#print_debug(asset_lower)
+
 	# Simplified check - just look for the platform name in the asset name
 	return platform in asset_lower
