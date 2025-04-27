@@ -15,6 +15,7 @@ run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 boot_splash/show_image=false
 config/icon="res://Vestige_logo.png"
+config/windows_native_icon="res://VestigeICO.ico"
 
 [autoload]
 
